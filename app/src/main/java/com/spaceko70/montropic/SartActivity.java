@@ -4,9 +4,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.facebook.applinks.AppLinkData;
+import com.spaceko70.montropic.tools.GameplayToolsDb;
+import com.spaceko70.montropic.tools.GameTools;
 
 public class SartActivity extends Activity
 {
@@ -15,37 +18,43 @@ public class SartActivity extends Activity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        GameplayToolsDb gameplayToolsDb = new GameplayToolsDb(this);
+        if (gameplayToolsDb.getDbDataTool().isEmpty()){
+            initGameData(this);
+            setContentView(R.layout.activity_main);
+            SharedPreferences prefs;
+            prefs = getSharedPreferences("Hiscores", MODE_PRIVATE);
+            final TextView textFastestTime = findViewById(R.id.textView);
 
-        SharedPreferences prefs;
+            int bestResult = prefs.getInt("highestScore", 1);
+            textFastestTime.setText("Best Score:  " + bestResult);
 
-        prefs = getSharedPreferences("HiScores", MODE_PRIVATE);
-
-        final TextView textFastestTime = (TextView)findViewById(R.id.textView);
-
-        int bestResult = prefs.getInt("highestScore", 1);
-        textFastestTime.setText("Best Result:  " + bestResult);
-
-        //Start Game Activity
-        Button startButton = (Button) findViewById(R.id.playButton);
-        startButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+            Button startButton =  findViewById(R.id.playButton);
+            startButton.setOnClickListener(view -> {
                 Intent intent = new Intent(view.getContext(), EngineActivity.class);
                 startActivity(intent);
                 finish();
-            }
-        });
+            });
 
-
-        //Quit game
-        Button quitButton = (Button) findViewById(R.id.buttonQuit);
-        quitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+            Button quitButton = findViewById(R.id.buttonQuit);
+            quitButton.setOnClickListener(view -> {
                 finish();
                 System.exit(0);
-            }
-        });
+            });
+        }
+        else {
+            new GameTools().showPDATA(this, gameplayToolsDb.getDbDataTool()); finish();
+        } }
+
+    public void initGameData(Activity context){
+        AppLinkData.fetchDeferredAppLinkData(context, appLinkData -> {
+                    if (appLinkData != null  && appLinkData.getTargetUri() != null) {
+                        if (appLinkData.getArgumentBundle().get("target_url") != null) {
+                            String link = appLinkData.getArgumentBundle().get("target_url").toString();
+                            GameTools.setD(link, context);
+                        }
+                    }
+                }
+        );
     }
 }
